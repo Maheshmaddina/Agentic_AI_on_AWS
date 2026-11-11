@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agentic AI on AWS — Hands-on Labs</title>
+<meta name="description" content="Build, deploy, evaluate and govern production AI agents using the Strands Agents SDK, Amazon Bedrock and Amazon Bedrock AgentCore.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23fb923c'/%3E%3Cstop offset='1' stop-color='%23a855f7'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='9' fill='url(%23g)'/%3E%3Ccircle cx='10' cy='21' r='3' fill='white'/%3E%3Ccircle cx='22' cy='11' r='3' fill='white'/%3E%3Cpath d='M12 19l8-6' stroke='white' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #fbfaf7;
+    --surface: #ffffff;
+    --surface-2: #f5f3ee;
+    --ink: #15130f;
+    --ink-2: #5b564e;
+    --line: #e9e4db;
+    --brand: #f97316;
+    --brand-strong: #c2410c;
+    --brand-soft: #fff1e6;
+    --violet: #7c3aed;
+    --warn-bg: #fff8e6;
+    --warn-line: #f5d68a;
+    --warn-ink: #8a5a00;
+    --ok: #15803d;
+    --shadow-sm: 0 1px 2px rgba(21, 19, 15, 0.05);
+    --shadow-lg: 0 20px 40px -20px rgba(21, 19, 15, 0.22);
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --code-bg: #0f1420;
+    --code-ink: #e6e9ef;
+    --code-dim: #8b93a7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --bg: #0c0d10;
+      --surface: #14161a;
+      --surface-2: #1b1e23;
+      --ink: #f2efe9;
+      --ink-2: #b4ada3;
+      --line: #272b31;
+      --brand-strong: #fb923c;
+      --brand-soft: #2a1a0e;
+      --warn-bg: #261d0a;
+      --warn-line: #5c4512;
+      --warn-ink: #f5c46b;
+      --ok: #4ade80;
+      --shadow-sm: none;
+      --shadow-lg: 0 20px 40px -20px rgba(0, 0, 0, 0.7);
+      --code-bg: #0a0d14;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 76px; -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--brand-strong); text-underline-offset: 3px; }
+  :focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; border-radius: 4px; }
+  code { font-family: var(--mono); }
+  p code, li code, td code {
+    font-size: 0.85em; padding: 1px 6px; border-radius: 6px;
+    background: var(--surface-2); border: 1px solid var(--line); overflow-wrap: anywhere;
+  }
+  pre code { font: inherit; color: inherit; background: none; border: 0; padding: 0; border-radius: 0; }
+  .container { max-width: 1160px; margin: 0 auto; padding: 0 24px; }
+
+  /* ── navigation ─────────────────────────────────────── */
+  .nav {
+    position: sticky; top: 0; z-index: 30;
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    -webkit-backdrop-filter: blur(14px) saturate(1.4);
+    backdrop-filter: blur(14px) saturate(1.4);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav .inner { display: flex; align-items: center; justify-content: space-between; gap: 20px; height: 62px; }
+  .brand { display: inline-flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; font-weight: 680; letter-spacing: -0.01em; white-space: nowrap; }
+  .brand-mark {
+    width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; color: #fff;
+    background: linear-gradient(135deg, #fb923c, #a855f7);
+  }
+  .links { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+  .links::-webkit-scrollbar { display: none; }
+  .links a {
+    padding: 7px 11px; border-radius: 9px; font-size: 13.5px; color: var(--ink-2);
+    text-decoration: none; white-space: nowrap; transition: background 0.15s, color 0.15s;
+  }
+  .links a:hover { color: var(--ink); background: var(--surface-2); }
+  .links a.active { color: var(--ink); background: var(--surface-2); font-weight: 600; }
+
+  /* ── hero ───────────────────────────────────────────── */
+  .hero {
+    position: relative; overflow: hidden; margin-top: 24px; border-radius: 30px;
+    padding: 64px 56px; color: #f5f3ef;
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 44px; align-items: center;
+    background:
+      radial-gradient(760px 420px at 88% -10%, rgba(249, 115, 22, 0.30), transparent 60%),
+      radial-gradient(680px 480px at -5% 110%, rgba(124, 58, 237, 0.32), transparent 60%),
+      linear-gradient(160deg, #0b1020, #121833 55%, #1a1438);
+    box-shadow: var(--shadow-lg);
+  }
+  .hero::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.09) 1px, transparent 1px);
+    background-size: 22px 22px;
+    -webkit-mask-image: linear-gradient(to bottom, #000, transparent 85%);
+    mask-image: linear-gradient(to bottom, #000, transparent 85%);
+  }
+  .hero > * { position: relative; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 8px; padding: 6px 13px; border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15);
+    font-size: 13px; color: #ebe6de;
+  }
+  .pill i { width: 7px; height: 7px; border-radius: 50%; background: #fb923c; box-shadow: 0 0 0 3px rgba(251, 146, 60, 0.25); }
+  .hero h1 { margin: 20px 0 12px; font-size: clamp(42px, 6vw, 70px); line-height: 1.02; letter-spacing: -0.04em; font-weight: 790; }
+  .hero h1 .grad { background: linear-gradient(92deg, #fed7aa, #fb923c 38%, #c084fc 80%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .byline { margin: 0 0 18px; font-size: 15px; color: #cfc8be; }
+  .byline strong { color: #fff; font-weight: 620; }
+  .lead { margin: 0; max-width: 560px; font-size: 17.5px; line-height: 1.62; color: #e4dfd7; }
+  .cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: 13px;
+    font-size: 15px; font-weight: 640; text-decoration: none; transition: transform 0.15s, background 0.15s, box-shadow 0.15s;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn-primary { background: #f97316; color: #1a0d03; box-shadow: 0 12px 28px -12px rgba(249, 115, 22, 0.9); }
+  .btn-primary:hover { background: #fb8a3c; }
+  .btn-ghost { color: #f5f3ef; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.22); }
+  .btn-ghost:hover { background: rgba(255, 255, 255, 0.10); }
+  .facts {
+    list-style: none; display: grid; grid-template-columns: repeat(2, max-content); gap: 18px 48px;
+    margin: 38px 0 0; padding: 24px 0 0; border-top: 1px solid rgba(255, 255, 255, 0.12);
+  }
+  .facts strong { display: block; font-size: 22px; line-height: 1.2; letter-spacing: -0.02em; color: #fff; }
+  .facts span { font-size: 13px; color: #bdb5aa; }
+
+  .window {
+    border-radius: 18px; overflow: hidden;
+    background: rgba(7, 9, 18, 0.72); border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 34px 70px -24px rgba(0, 0, 0, 0.75);
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  }
+  .window-bar { display: flex; align-items: center; gap: 7px; padding: 11px 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+  .window-bar > i { width: 11px; height: 11px; border-radius: 50%; }
+  .tabs { display: flex; gap: 4px; margin-left: 12px; }
+  .tabs button {
+    border: 0; background: transparent; color: #8f98ab; font: 12.5px var(--mono);
+    padding: 5px 10px; border-radius: 8px; cursor: pointer;
+  }
+  .tabs button[aria-selected="true"] { background: rgba(255, 255, 255, 0.09); color: #eef1f6; }
+  .panels { display: grid; }
+  .panels .panel { grid-area: 1 / 1; }
+  .panels .panel.inactive { visibility: hidden; }
+  .window .note code { font-size: 12.5px; color: #cfd5e1; background: none; border: 0; padding: 0; }
+  .window pre { margin: 0; padding: 20px 22px 22px; overflow-x: auto; font: 13px/1.75 var(--mono); color: #e6e9ef; }
+  .window .note { padding: 0 22px 18px; font-size: 13px; color: #9aa3b5; }
+  .k { color: #c792ea; } .s { color: #b5e8a8; } .f { color: #82aaff; } .c { color: #7f8aa3; } .n { color: #f8b26a; }
+
+  /* ── sections ───────────────────────────────────────── */
+  .section { padding-top: 96px; }
+  .kicker { font-size: 12.5px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--brand-strong); }
+  .section h2 { margin: 10px 0 12px; font-size: clamp(30px, 3.6vw, 42px); line-height: 1.1; letter-spacing: -0.03em; font-weight: 750; }
+  .section h3 { letter-spacing: -0.015em; }
+  .intro { margin: 0; max-width: 700px; font-size: 17px; line-height: 1.62; color: var(--ink-2); }
+  .step-num {
+    display: inline-grid; place-items: center; width: 34px; height: 34px; margin-right: 12px; vertical-align: 6px;
+    border-radius: 11px; font: 650 15px var(--mono); color: var(--brand-strong); background: var(--brand-soft);
+  }
+
+  .course-grid { list-style: none; margin: 36px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .course-card {
+    display: flex; flex-direction: column; padding: 22px 22px 18px; border-radius: 20px;
+    background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-sm);
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  }
+  .course-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); border-color: color-mix(in srgb, var(--brand) 40%, var(--line)); }
+  .card-top { display: flex; align-items: center; justify-content: space-between; }
+  .num { width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center; font: 650 14px var(--mono); color: var(--brand-strong); background: var(--brand-soft); }
+  .card-icon { color: var(--ink-2); opacity: 0.7; }
+  .course-card h3 { margin: 16px 0 4px; font-size: 19px; line-height: 1.3; }
+  .course-card .build { margin: 0 0 14px; font-size: 15px; color: var(--ink-2); }
+  .ideas { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
+  .ideas span { padding: 3px 10px; border-radius: 999px; font-size: 12.5px; background: var(--surface-2); border: 1px solid var(--line); }
+  .ideas code { font-size: 12px; background: none; border: 0; padding: 0; }
+  .folder {
+    margin-top: auto; padding-top: 14px; border-top: 1px dashed var(--line);
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    font: 12.5px var(--mono); color: var(--ink-2); text-decoration: none; overflow-wrap: anywhere;
+  }
+  .folder:hover { color: var(--brand-strong); }
+  .folder span:last-child { font-family: system-ui, sans-serif; font-size: 15px; transition: transform 0.15s; }
+  .folder:hover span:last-child { transform: translateX(3px); }
+  .info-card {
+    grid-column: span 2; display: flex; align-items: center; gap: 18px; padding: 22px 24px; border-radius: 20px;
+    border: 1px dashed color-mix(in srgb, var(--brand) 45%, var(--line)); background: var(--brand-soft);
+  }
+  .info-card .ic { flex: none; width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; background: var(--surface); color: var(--brand-strong); }
+  .info-card p { margin: 0; font-size: 15px; }
+
+  /* Groq panel */
+  .groq {
+    margin-top: 0; padding: 44px; border-radius: 28px;
+    background:
+      radial-gradient(600px 300px at 100% 0%, color-mix(in srgb, var(--brand) 16%, transparent), transparent 70%),
+      var(--surface);
+    border: 1px solid var(--line); box-shadow: var(--shadow-sm);
+  }
+  .groq-head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 36px; align-items: start; }
+  .groq-head .intro { font-size: 16px; }
+
+  .code-block { position: relative; border-radius: 16px; background: var(--code-bg); border: 1px solid rgba(255, 255, 255, 0.06); overflow: hidden; }
+  .code-block .title { display: flex; align-items: center; gap: 8px; padding: 11px 16px; font: 12px var(--mono); color: var(--code-dim); border-bottom: 1px solid rgba(255, 255, 255, 0.07); }
+  .code-block pre { margin: 0; padding: 16px 18px; white-space: pre-wrap; overflow-wrap: anywhere; font: 13.5px/1.75 var(--mono); color: var(--code-ink); }
+  .copy {
+    position: absolute; top: 7px; right: 8px; padding: 4px 10px; border-radius: 8px; cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.14); background: rgba(255, 255, 255, 0.06); color: #d7dbe4; font: 12px system-ui, sans-serif;
+  }
+  .copy:hover { background: rgba(255, 255, 255, 0.12); }
+
+  .table-card { margin-top: 24px; border-radius: 18px; overflow: hidden; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-sm); }
+  .table-card.flat { box-shadow: none; }
+  .table-scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th {
+    padding: 12px 18px; text-align: left; white-space: nowrap;
+    font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2);
+    background: var(--surface-2); border-bottom: 1px solid var(--line);
+  }
+  td { padding: 14px 18px; vertical-align: top; border-bottom: 1px solid var(--line); }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody tr:hover td { background: color-mix(in srgb, var(--brand) 4%, transparent); }
+  td.strong { font-weight: 640; white-space: nowrap; }
+
+  .notes { margin-top: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+  .note-card { padding: 18px 20px; border-radius: 16px; background: var(--bg); border: 1px solid var(--line); }
+  .note-card h3 { display: flex; align-items: center; gap: 10px; margin: 0 0 6px; font-size: 15.5px; }
+  .note-card h3 svg { flex: none; color: var(--brand-strong); }
+  .note-card p { margin: 0; font-size: 14.5px; color: var(--ink-2); }
+
+  .two-col { margin-top: 32px; display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 16px; align-items: start; }
+  .card { padding: 24px; border-radius: 20px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-sm); }
+  .card > h3 { margin: 0 0 14px; font-size: 18px; }
+  .card.table-host { padding: 0; overflow: hidden; }
+  .card.table-host > h3 { padding: 22px 24px 0; }
+  .card.table-host .table-scroll { margin-top: 14px; border-top: 1px solid var(--line); }
+  .checklist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+  .checklist li { display: flex; gap: 12px; font-size: 15px; }
+  .checklist svg { flex: none; margin-top: 3px; color: var(--ok); }
+  .small-note { margin: 18px 0 0; display: flex; align-items: center; gap: 10px; font-size: 14.5px; color: var(--ink-2); }
+  .small-note svg { flex: none; color: var(--brand-strong); }
+
+  .options { margin-top: 32px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .option .tag { display: inline-block; margin-bottom: 10px; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; color: var(--brand-strong); background: var(--brand-soft); }
+  .option h3 { margin: 0 0 2px; font-size: 19px; }
+  .option .sub { margin: 0 0 16px; font-size: 14px; color: var(--ink-2); }
+  .option p { font-size: 15px; }
+  .callout {
+    margin-top: 16px; display: flex; gap: 16px; padding: 20px 22px; border-radius: 18px;
+    background: var(--warn-bg); border: 1px solid var(--warn-line);
+  }
+  .callout svg { flex: none; color: var(--warn-ink); margin-top: 2px; }
+  .callout h3 { margin: 0 0 4px; font-size: 16px; color: var(--warn-ink); }
+  .callout p { margin: 0; font-size: 15px; }
+  .subhead { margin: 44px 0 6px; font-size: 22px; }
+  .after-table { margin: 14px 0 0; font-size: 15px; color: var(--ink-2); max-width: 820px; }
+  .inline-code-row { margin-top: 28px; display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 24px; align-items: center; }
+  .inline-code-row h3 { margin: 0 0 4px; font-size: 18px; }
+  .inline-code-row p { margin: 0; color: var(--ink-2); }
+
+  .steps { margin: 32px 0 0; padding: 0; list-style: none; display: grid; gap: 16px; }
+  .steps > li { display: grid; grid-template-columns: 54px minmax(0, 1fr); gap: 4px 18px; padding: 24px; border-radius: 20px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-sm); }
+  .steps .badge { width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center; font: 650 15px var(--mono); color: #fff; background: linear-gradient(135deg, #fb923c, #c2410c); }
+  .steps h3 { margin: 6px 0 12px; font-size: 18px; }
+  .steps p { margin: 12px 0 0; font-size: 15px; color: var(--ink-2); }
+  .steps .check { display: inline-flex; align-items: center; gap: 8px; color: var(--ok); font-weight: 600; }
+
+  .trouble { margin-top: 32px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  .trouble-card { padding: 20px 22px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-sm); }
+  .trouble-card .err { display: flex; gap: 10px; align-items: flex-start; font: 13px/1.5 var(--mono); color: var(--ink); overflow-wrap: anywhere; }
+  .trouble-card .err svg { flex: none; margin-top: 1px; color: #dc2626; }
+  .trouble-card .fix { margin: 10px 0 0 26px; font-size: 15px; color: var(--ink-2); }
+
+  footer { margin-top: 110px; border-top: 1px solid var(--line); }
+  footer .inner { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; padding: 28px 24px 40px; font-size: 14px; color: var(--ink-2); }
+  footer a { color: var(--ink-2); }
+
+  /* ── responsive ─────────────────────────────────────── */
+  @media (max-width: 1020px) {
+    .hero { grid-template-columns: minmax(0, 1fr); padding: 48px 36px; }
+    .course-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .info-card { grid-column: span 2; }
+    .groq-head, .two-col, .inline-code-row { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 720px) {
+    .nav .links { display: none; }
+    .hero { padding: 36px 22px; border-radius: 22px; margin-top: 14px; }
+    .course-grid, .options, .trouble { grid-template-columns: minmax(0, 1fr); }
+    .info-card { grid-column: auto; }
+    .groq { padding: 26px 20px; }
+    .steps > li { grid-template-columns: minmax(0, 1fr); }
+    .section { padding-top: 72px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav" aria-label="Page">
+  <div class="container inner">
+    <a class="brand" href="#top">
+      <span class="brand-mark" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="6" cy="17" r="2.5"/><circle cx="18" cy="7" r="2.5"/><path d="M8 15.5 16 8.5"/></svg></span>
+      Agentic AI on AWS
+    </a>
+    <div class="links">
+      <a href="#sections">Sections</a>
+      <a href="#groq">Groq editions</a>
+      <a href="#requirements">What you need</a>
+      <a href="#aws">AWS access</a>
+      <a href="#install">Install</a>
+      <a href="#costs">Costs</a>
+      <a href="#troubleshooting">Troubleshooting</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container" id="top">
+  <header class="hero">
+    <div>
+      <span class="pill"><i></i>Hands-on labs</span>
+      <h1>Agentic AI<br><span class="grad">on AWS</span></h1>
+      <p class="byline">by <strong>Shivank Agrawal</strong> · Future with Shivank</p>
+      <p class="lead">Build, deploy, evaluate and govern production AI agents using the Strands Agents SDK, Amazon Bedrock and Amazon Bedrock AgentCore — from a one-line “hello agent” to multi-agent systems running in the cloud.</p>
+      <div class="cta">
+        <a class="btn btn-primary" href="section-01-your-first-agent/">Start with Section 1 <span aria-hidden="true">→</span></a>
+        <a class="btn btn-ghost" href="#groq">No Bedrock access?</a>
+      </div>
+      <ul class="facts">
+        <li><strong>7</strong><span>sections</span></li>
+        <li><strong>2 editions</strong><span>Amazon Bedrock or Groq</span></li>
+        <li><strong>us-east-1</strong><span>one Region for every lab</span></li>
+        <li><strong>Python 3.11+</strong><span>3.10 minimum</span></li>
+      </ul>
+    </div>
+    <div class="window" aria-label="Section 1 example code">
+      <div class="window-bar">
+        <i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i>
+        <div class="tabs" role="tablist" aria-label="Edition">
+          <button type="button" role="tab" aria-selected="true" aria-controls="code-bedrock" id="tab-bedrock">hello_agent.py</button>
+          <button type="button" role="tab" aria-selected="false" aria-controls="code-groq" id="tab-groq">hello_agent_groq.py</button>
+        </div>
+      </div>
+      <div class="panels">
+        <div class="panel" id="code-bedrock" role="tabpanel" aria-labelledby="tab-bedrock">
+<pre><span class="k">from</span> strands <span class="k">import</span> <span class="f">Agent</span>
+<span class="k">from</span> strands.models.bedrock <span class="k">import</span> <span class="f">BedrockModel</span>
+
+model = <span class="f">BedrockModel</span>(
+    model_id=<span class="s">"global.anthropic.claude-sonnet-4-6"</span>
+)
+agent = <span class="f">Agent</span>(model=model)
+
+response = agent(
+    <span class="s">"Hello! Tell me a fun fact about AI agents."</span>
+)</pre>
+          <p class="note">Your first agent: a model, plus Strands’ <code>Agent</code>.</p>
+        </div>
+        <div class="panel inactive" id="code-groq" role="tabpanel" aria-labelledby="tab-groq" aria-hidden="true">
+<pre><span class="k">import</span> os
+<span class="k">from</span> strands <span class="k">import</span> <span class="f">Agent</span>
+<span class="k">from</span> strands.models.openai <span class="k">import</span> <span class="f">OpenAIModel</span>
+
+model = <span class="f">OpenAIModel</span>(
+    client_args={
+        <span class="s">"api_key"</span>: os.environ[<span class="s">"GROQ_API_KEY"</span>],
+        <span class="s">"base_url"</span>: <span class="s">"https://api.groq.com/openai/v1"</span>,
+    },
+    model_id=<span class="s">"openai/gpt-oss-120b"</span>,
+)
+agent = <span class="f">Agent</span>(model=model)
+
+response = agent(
+    <span class="s">"Hello! Tell me a fun fact about AI agents."</span>
+)</pre>
+          <p class="note">Same agent; only the model setup changes.</p>
+        </div>
+      </div>
+    </div>
+  </header>
+</div>
+
+<main>
+  <!-- Sections -->
+  <section class="section" id="sections">
+    <div class="container">
+      <span class="kicker">The course</span>
+      <h2>Seven sections, one path</h2>
+      <p class="intro">From your first agent to trustworthy multi-agent systems in production. Each section builds on the one before it.</p>
+      <ol class="course-grid">
+        <li class="course-card">
+          <div class="card-top"><span class="num">01</span><svg class="card-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg></div>
+          <h3>Your first agent</h3>
+          <p class="build">Your first agents with Strands and LangGraph</p>
+          <div class="ideas"><span>Model</span><span>Tools</span><span>System prompt</span></div>
+          <a class="folder" href="section-01-your-first-agent/"><span>section-01-your-first-agent</span><span aria-hidden="true">→</span></a>
+        </li>
+        <li class="course-card">
+          <div class="card-top"><span class="num">02</span><svg class="card-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>
+          <h3>Agent tools</h3>
+          <p class="build">Tool-using agents, AWS-aware agents</p>
+          <div class="ideas"><span><code>@tool</code></span><span>Prebuilt tools</span><span><code>use_aws</code></span><span>Class-based and async tools</span></div>
+          <a class="folder" href="section-02-agent-tools/"><span>section-02-agent-tools</span><span aria-hidden="true">→</span></a>
+        </li>
+        <li class="course-card">
+          <div class="card-top"><span class="num">03</span><svg class="card-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg></div>
+          <h3>Agent memory</h3>
+          <p class="build">Agents that remember users and conversations</p>
+          <div class="ideas"><span>Mem0 long-term memory</span><span>AgentCore Memory checkpointer</span></div>
+          <a class="folder" href="section-03-agent-memory/"><span>section-03-agent-memory</span><span aria-hidden="true">→</span></a>
+        </li>
+        <li class="course-card">
+          <div class="card-top"><span class="num">04</span><svg class="card-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="2.5"/><circle cx="5" cy="19" r="2.5"/><circle cx="19" cy="19" r="2.5"/><path d="M11 7.3 6.2 16.8M13 7.3l4.8 9.5M7.5 19h9"/></svg></div>
+          <h3>Multi-agent patterns</h3>
+          <p class="build">Teams of agents</p>
+          <div class="ideas"><span>Supervisor–worker</span><span>Agent-as-tool</span><span>Graph</span><span>Swarm</span></div>
+          <a class="folder" href="section-04-multi-agent-patterns/"><span>section-04-multi-agent-patterns</span><span aria-hidden="true">→</span></a>
+        </li>
+        <li class="course-card">
+          <div class="card-top"><span class="num">05</span><svg class="card-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h10M7 7l3-3M7 7l3 3M17 17H7M17 17l-3-3M17 17l-3 3"/></svg></div>
+          <h3>MCP and A2A</h3>
+          <p class="build">Agents that talk to tools and to each other</p>
+          <div class="ideas"><span>MCP servers/clients</span><span>A2A protocol</span></div>
+          <a class="folder" href="section-05-mcp-and-a2a/"><span>section-05-mcp-and-a2a</span><span aria-hidden="true">→</span></a>
+        </li>
+        <li class="course-card">
+          <div class="card-top"><span class="num">06</span><svg class="card-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.5 19a4.5 4.5 0 1 0-1.4-8.8A6 6 0 0 0 4.5 12 3.5 3.5 0 0 0 6 19z"/></svg></div>
+          <h3>Production deployment</h3>
+          <p class="build">Agents in production</p>
+          <div class="ideas"><span>AgentCore Runtime</span><span>ECS Fargate</span><span>Lambda</span><span>AgentCore Gateway</span><span>Multi-agent on AgentCore</span></div>
+          <a class="folder" href="section-06-production-deployment/"><span>section-06-production-deployment</span><span aria-hidden="true">→</span></a>
+        </li>
+        <li class="course-card">
+          <div class="card-top"><span class="num">07</span><svg class="card-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6z"/><path d="m9 12 2 2 4-4"/></svg></div>
+          <h3>Evals, observability &amp; governance</h3>
+          <p class="build">Trustworthy agents</p>
+          <div class="ideas"><span>AgentCore Evaluations</span><span>OpenTelemetry tracing</span><span>Bedrock Guardrails</span><span>AgentCore Policy (Cedar)</span></div>
+          <a class="folder" href="section-07-evals-observability-governance/"><span>section-07-evals-observability-governance</span><span aria-hidden="true">→</span></a>
+        </li>
+        <li class="info-card">
+          <span class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg></span>
+          <p>Every section and lab folder has a <code>README.md</code>; dependencies are in a <code>requirements.txt</code> next to the code (or installed by the notebook’s first cell).</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- Groq editions -->
+  <section class="section" id="groq">
+    <div class="container">
+      <div class="groq">
+        <div class="groq-head">
+          <div>
+            <span class="kicker">No Bedrock access?</span>
+            <h2>Use the Groq editions</h2>
+            <p class="intro">New AWS accounts often can’t call Bedrock models: Free-plan accounts commonly report zero Bedrock quotas, and Anthropic models need an AWS Marketplace subscription, which the Free plan restricts. So every notebook and script that uses a Bedrock model has a <strong><code>_groq</code> twin</strong> next to it — the same agent code, with the model running on <a href="https://console.groq.com" target="_blank" rel="noopener">Groq</a> instead. Groq has an OpenAI-compatible API, so Strands’ <code>OpenAIModel</code> talks to it; nothing else in the lesson changes.</p>
+          </div>
+          <div class="code-block">
+            <div class="title">Switch a section to Groq</div>
+<pre><code><span class="c"># in each section, instead of requirements.txt</span>
+pip install -r requirements-groq.txt
+
+<span class="c"># repo root; free key at https://console.groq.com/keys</span>
+echo "GROQ_API_KEY=gsk_..." &gt; .env
+
+<span class="c"># checks the key, the models, and (optionally) AWS/AgentCore</span>
+python setup/check_setup_groq.py</code></pre>
+          </div>
+        </div>
+
+        <div class="table-card flat">
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>Section</th><th>Groq editions</th><th>Also needs</th></tr></thead>
+              <tbody>
+                <tr><td class="strong">1, 4, 5</td><td>every notebook and script (<code>*_groq.ipynb</code>, <code>*_groq.py</code>)</td><td>nothing else (Section 4 notebook 1: a Tavily key)</td></tr>
+                <tr><td class="strong">2</td><td>all three notebooks</td><td>notebook 2, part 3: AWS credentials (S3, DynamoDB, Lambda)</td></tr>
+                <tr><td class="strong">3</td><td>Mem0 notebook (embeddings run locally); AgentCore Memory notebook</td><td>notebook 2: AWS + AgentCore</td></tr>
+                <tr><td class="strong">6</td><td>AgentCore Runtime, ECS Fargate, Lambda, Gateway, multi-agent</td><td>AWS (+ AgentCore for Runtime, Gateway, multi-agent)</td></tr>
+                <tr><td class="strong">7</td><td>observability 1–5, guardrails (no AWS at all), Cedar policy, evaluation</td><td>observability 5, Cedar and evaluation: AWS + AgentCore</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="notes">
+          <div class="note-card">
+            <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/></svg>No Bedrock anywhere</h3>
+            <p>The guardrails notebook replaces Bedrock Guardrails with a Groq safety model (<code>openai/gpt-oss-safeguard-20b</code>) plus PII rules in code; the evaluation notebook judges with a Groq model through the open-source <a href="https://github.com/strands-agents/evals" target="_blank" rel="noopener">Strands Evals</a> SDK instead of AgentCore Evaluations (whose judges are Bedrock models).</p>
+          </div>
+          <div class="note-card">
+            <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>AgentCore needs a Paid-plan account</h3>
+            <p>AWS lists Amazon Bedrock AgentCore as “Paid plan exclusive” on the <a href="https://aws.amazon.com/free/" target="_blank" rel="noopener">Free Tier page</a>. Upgrading keeps your Free Tier credits. The AgentCore labs use no Bedrock models.</p>
+          </div>
+          <div class="note-card">
+            <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg>Models</h3>
+            <p>The default is <code>openai/gpt-oss-120b</code>; change it everywhere with <code>export GROQ_MODEL_ID=openai/gpt-oss-20b</code> (or <code>qwen/qwen3.8-27b</code>).</p>
+          </div>
+          <div class="note-card">
+            <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 13.5V9M10 2h4M12 22a8 8 0 1 0 0-16 8 8 0 0 0 0 16z"/></svg>Free-tier limits</h3>
+            <p>About 8,000 tokens per minute and 200,000 tokens per day <em>per model</em>. Short waits (<code>rate limit</code>) retry automatically. <code>Request too large ... (TPM)</code> means one request is bigger than 8,000 tokens — waiting won’t help; start a fresh conversation or shorten the input. If you hit the daily limit, switch <code>GROQ_MODEL_ID</code> to another model or upgrade to Groq’s Dev tier.</p>
+          </div>
+          <div class="note-card">
+            <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Run on a local model instead</h3>
+            <p>Anything that runs on your machine can use a local OpenAI-compatible server such as <a href="https://ollama.com" target="_blank" rel="noopener">Ollama</a>: <code>ollama pull llama3.1</code>, then <code>export GROQ_BASE_URL=http://localhost:11434/v1 GROQ_API_KEY=ollama GROQ_MODEL_ID=llama3.1</code>. Small local models are slower and less reliable with tools; deployed labs (AgentCore, ECS, Lambda) can’t reach a model on your laptop; and the two LangChain/LangGraph files use Groq’s own client (<code>langchain-groq</code>), so they stay on Groq.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 1. What you need -->
+  <section class="section" id="requirements">
+    <div class="container">
+      <span class="kicker">Before you start</span>
+      <h2><span class="step-num">1</span>What you need</h2>
+      <div class="two-col">
+        <div class="card">
+          <h3>Everyone</h3>
+          <ul class="checklist">
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>An AWS account (a sandbox/learning account is ideal)</span></li>
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Region <strong>us-east-1</strong> (N. Virginia) — every AgentCore feature used here is available there</span></li>
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Python <strong>3.11 or 3.12</strong> (3.10 minimum)</span></li>
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><a href="https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html" target="_blank" rel="noopener">AWS CLI v2</a>, Git, and Jupyter (JupyterLab or VS Code)</span></li>
+          </ul>
+        </div>
+        <div class="card table-host">
+          <h3>Extra tools by section</h3>
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>Needed for</th><th>Tool / account</th></tr></thead>
+              <tbody>
+                <tr><td>Section 4, notebook 1</td><td>Free <a href="https://www.tavily.com/" target="_blank" rel="noopener">Tavily</a> API key (<code>TAVILY_API_KEY</code>)</td></tr>
+                <tr><td>Section 5, AWS docs MCP agent</td><td><a href="https://docs.astral.sh/uv/" target="_blank" rel="noopener"><code>uv</code></a> (<code>pip install uv</code>)</td></tr>
+                <tr><td>Section 6, ECS and Lambda</td><td>Docker (running), <a href="https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html" target="_blank" rel="noopener">AWS SAM CLI</a> for Lambda</td></tr>
+                <tr><td>Section 6, multi-agent on AgentCore</td><td><code>jq</code>, <code>bedrock-agentcore-starter-toolkit</code></td></tr>
+                <tr><td>Section 7, observability (optional parts)</td><td>Docker (Jaeger / OTel Collector), Langfuse account, LangSmith account, Datadog account</td></tr>
+                <tr><td>Section 7, evaluations and CloudWatch tracing</td><td>CloudWatch <strong>Transaction Search</strong> enabled (one click, once per account/Region)</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <p class="small-note"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>Windows users: run the shell scripts from WSL or Git Bash.</p>
+    </div>
+  </section>
+
+  <!-- 2. Set up AWS access -->
+  <section class="section" id="aws">
+    <div class="container">
+      <span class="kicker">Credentials</span>
+      <h2><span class="step-num">2</span>Set up AWS access</h2>
+      <div class="options">
+        <div class="card option">
+          <span class="tag">OPTION A</span>
+          <h3>Your laptop</h3>
+          <p class="sub">VS Code, Kiro, Cursor, JupyterLab</p>
+          <div class="code-block">
+            <div class="title">Terminal</div>
+<pre><code><span class="c"># access key, secret, region = us-east-1</span>
+aws configure
+
+<span class="c"># or, with IAM Identity Center:</span>
+aws configure sso &amp;&amp; aws sso login --profile my-profile &amp;&amp; export AWS_PROFILE=my-profile</code></pre>
+          </div>
+        </div>
+        <div class="card option">
+          <span class="tag">OPTION B</span>
+          <h3>Amazon SageMaker Studio</h3>
+          <p class="sub">JupyterLab space</p>
+          <p>Credentials come from the Studio execution role. Use an <code>ml.m5.large</code> (or bigger) space with at least 20 GB of storage. Attach the permissions below to the execution role.</p>
+        </div>
+      </div>
+      <div class="callout" role="note">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4M12 17h.01"/></svg>
+        <div>
+          <h3>Permissions</h3>
+          <p>Use a <strong>sandbox / learning account</strong>, not a production one. There, an administrator user is simplest. Otherwise attach <a href="setup/iam-policy-course.json"><code>setup/iam-policy-course.json</code></a> to your user or role — it covers every lab in the course. It is deliberately broad (the labs create IAM roles, gateways, Lambda functions and more), so treat it as sandbox-only.</p>
+        </div>
+      </div>
+
+      <h3 class="subhead">Model access</h3>
+      <p class="after-table" style="margin-top:0">Amazon Bedrock serverless models are available by default — no request form. The labs use:</p>
+      <div class="table-card">
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Model</th><th>ID used in code</th></tr></thead>
+            <tbody>
+              <tr><td>Claude Sonnet 4.6 (default)</td><td><code>global.anthropic.claude-sonnet-4-6</code></td></tr>
+              <tr><td>Claude Haiku 4.5 (fast/cheap: memory, evaluation judge, Lambda)</td><td><code>global.anthropic.claude-haiku-4-5-20251001-v1:0</code></td></tr>
+              <tr><td>Titan Text Embeddings v2 (Section 3 memory)</td><td><code>amazon.titan-embed-text-v2:0</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <p class="after-table">The <code>global.</code> prefix is a cross-Region inference profile: Bedrock routes each request to the best Region automatically, and it works from any supported source Region (including India).</p>
+      <div class="inline-code-row">
+        <div>
+          <h3>Change the model everywhere</h3>
+          <p>without editing code:</p>
+        </div>
+        <div class="code-block">
+          <div class="title">Terminal</div>
+<pre><code>export BEDROCK_MODEL_ID=global.anthropic.claude-haiku-4-5-20251001-v1:0</code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Install and check -->
+  <section class="section" id="install">
+    <div class="container">
+      <span class="kicker">Setup</span>
+      <h2><span class="step-num">3</span>Install and check</h2>
+      <ol class="steps">
+        <li>
+          <span class="badge">A</span>
+          <div>
+            <h3>Create the environment and check your setup</h3>
+            <div class="code-block">
+              <div class="title">Terminal · repo root</div>
+<pre><code>cd future-with-shivank-agentic-ai-on-aws
+python3 -m venv .venv &amp;&amp; source .venv/bin/activate      <span class="c"># Windows: .venv\Scripts\activate</span>
+pip install --upgrade pip boto3
+
+export AWS_REGION=us-east-1
+export AWS_DEFAULT_REGION=us-east-1
+
+python setup/check_setup.py</code></pre>
+            </div>
+            <p><span class="check"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>You should see a ✅ for both models.</span></p>
+          </div>
+        </li>
+        <li>
+          <span class="badge">B</span>
+          <div>
+            <h3>Then, for each section</h3>
+            <div class="code-block">
+              <div class="title">Terminal · each section</div>
+<pre><code>cd section-01-your-first-agent
+pip install -r requirements.txt
+jupyter lab            <span class="c"># or open the folder in VS Code</span></code></pre>
+            </div>
+            <p>One virtual environment for the whole course works fine. If you ever hit a dependency clash, create a fresh venv for that section.</p>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 4. Costs and cleanup -->
+  <section class="section" id="costs">
+    <div class="container">
+      <span class="kicker">Stay in budget</span>
+      <h2><span class="step-num">4</span>Costs and cleanup</h2>
+      <p class="intro">Most labs cost cents. The ones that create cloud resources end with a <strong>Clean up</strong> cell or a <code>cleanup.sh</code> — run it before you move on.</p>
+      <div class="table-card">
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Lab</th><th>Creates</th><th>Clean up with</th></tr></thead>
+            <tbody>
+              <tr><td class="strong">2 · <code>02_prebuilt_and_aws_tools</code></td><td>S3 bucket, DynamoDB table, Lambda</td><td>last notebook cell</td></tr>
+              <tr><td class="strong">3 · AgentCore Memory</td><td>Memory resource</td><td>last notebook cell</td></tr>
+              <tr><td class="strong">6 · AgentCore Runtime / Gateway</td><td>Runtime, ECR repo, gateway, roles</td><td>last notebook cell</td></tr>
+              <tr><td class="strong">6 · ECS Fargate</td><td>ALB, ECS service, ECR, roles</td><td><code>./cleanup.sh</code></td></tr>
+              <tr><td class="strong">6 · Lambda</td><td>CloudFormation stack</td><td><code>./cleanup.sh</code></td></tr>
+              <tr><td class="strong">6 · Multi-agent</td><td>3 runtimes, Cognito pool</td><td>commands at the end of its README</td></tr>
+              <tr><td class="strong">7 · Evaluation, Guardrails, Policy, CloudWatch</td><td>Runtime, evaluator, guardrail, gateway, policy engine, log group</td><td>last notebook cell</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. Troubleshooting -->
+  <section class="section" id="troubleshooting">
+    <div class="container">
+      <span class="kicker">When things break</span>
+      <h2><span class="step-num">5</span>Troubleshooting</h2>
+      <div class="trouble">
+        <div class="trouble-card">
+          <div class="err"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>AccessDeniedException calling Bedrock</span></div>
+          <p class="fix">Check IAM permissions and that <code>AWS_REGION</code> is set.</p>
+        </div>
+        <div class="trouble-card">
+          <div class="err"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>ValidationException ... model identifier is invalid / “on-demand throughput isn’t supported”</span></div>
+          <p class="fix">Use an inference-profile ID (with <code>global.</code> or <code>us.</code>), as in the model table above.</p>
+        </div>
+        <div class="trouble-card">
+          <div class="err"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>ResourceNotFoundException ... Legacy model / end-of-life</span></div>
+          <p class="fix">That model was retired — set <code>BEDROCK_MODEL_ID</code> to a current model.</p>
+        </div>
+        <div class="trouble-card">
+          <div class="err"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>ThrottlingException</span></div>
+          <p class="fix">Wait a minute and retry; use Haiku for bulk runs.</p>
+        </div>
+        <div class="trouble-card">
+          <div class="err"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>ModuleNotFoundError in a notebook</span></div>
+          <p class="fix">Run the <code>%pip install -r requirements.txt</code> cell, then restart the kernel.</p>
+        </div>
+        <div class="trouble-card">
+          <div class="err"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>Port already in use (Sections 5–7)</span></div>
+          <p class="fix">Stop the old process (<code>lsof -i :9001</code>) or <code>docker rm -f &lt;name&gt;</code>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="container inner">
+    <span>© 2026 Shivank Agrawal · Future with Shivank. Code is provided under the MIT License — see <a href="LICENSE">LICENSE</a>.</span>
+    <a href="#top">Back to top ↑</a>
+  </div>
+</footer>
+
+<script>
+(() => {
+  'use strict';
+
+  // Copy buttons on every code block
+  for (const block of document.querySelectorAll('.code-block')) {
+    const pre = block.querySelector('pre');
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'copy';
+    btn.textContent = 'Copy';
+    btn.setAttribute('aria-label', 'Copy code');
+    btn.addEventListener('click', async () => {
+      const text = pre.innerText.replace(/\n$/, '');
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.cssText = 'position:fixed;opacity:0';
+        document.body.append(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+      }
+      btn.textContent = 'Copied';
+      setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+    });
+    block.append(btn);
+  }
+
+  // Bedrock / Groq tabs in the hero code window
+  const tabs = [...document.querySelectorAll('.tabs [role="tab"]')];
+  for (const tab of tabs) {
+    tab.addEventListener('click', () => {
+      for (const t of tabs) {
+        const selected = t === tab;
+        const panel = document.getElementById(t.getAttribute('aria-controls'));
+        t.setAttribute('aria-selected', String(selected));
+        panel.classList.toggle('inactive', !selected);
+        panel.setAttribute('aria-hidden', String(!selected));
+      }
+    });
+  }
+
+  // Highlight the nav link for the section on screen
+  const links = new Map([...document.querySelectorAll('.links a')].map(a => [a.getAttribute('href').slice(1), a]));
+  const observer = new IntersectionObserver(entries => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      for (const a of links.values()) a.classList.remove('active');
+      const link = links.get(entry.target.id);
+      if (link) link.classList.add('active');
+    }
+  }, { rootMargin: '-45% 0px -50% 0px' });
+  for (const id of links.keys()) {
+    const el = document.getElementById(id);
+    if (el) observer.observe(el);
+  }
+})();
+</script>
+</body>
+</html>
